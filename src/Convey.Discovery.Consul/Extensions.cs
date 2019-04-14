@@ -28,7 +28,7 @@ namespace Convey.Discovery.Consul
 
         public static IConveyBuilder AddConsul(this IConveyBuilder builder, ConsulOptions options)
         {
-            if (!builder.TryRegister(RegistryName))
+            if (!options.Enabled || !builder.TryRegister(RegistryName))
             {
                 return builder;
             }
