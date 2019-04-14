@@ -11,12 +11,12 @@ namespace Convey.Discovery.Consul
 {
     public static class Extensions
     {
-        private const string ConsulSectionName = "consul";
+        private const string SectionName = "consul";
         private const string RegistryName = "discovery.consul";
 
-        public static IConveyBuilder AddConsul(this IConveyBuilder builder, string sectionName = ConsulSectionName)
+        public static IConveyBuilder AddConsul(this IConveyBuilder builder, string sectionName = SectionName)
         {
-            var options = builder.GetOptions<ConsulOptions>(ConsulSectionName);
+            var options = builder.GetOptions<ConsulOptions>(SectionName);
             return builder.AddConsul(options);
         }
         
