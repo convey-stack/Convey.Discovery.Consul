@@ -5,6 +5,7 @@ using Convey.Discovery.Consul.Http;
 using Convey.Discovery.Consul.Registries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Convey.Discovery.Consul
@@ -32,7 +33,8 @@ namespace Convey.Discovery.Consul
             {
                 return builder;
             }
-            
+
+            builder.Services.AddSingleton(options);
             builder.Services.AddTransient<IConsulServicesRegistry, ConsulServicesRegistry>();
             builder.Services.AddTransient<ConsulServiceDiscoveryMessageHandler>();
             builder.Services.AddHttpClient<IConsulHttpClient, ConsulHttpClient>()
@@ -65,7 +67,19 @@ namespace Convey.Discovery.Consul
             return builder;
         }
 
-        public static void DeregisterConsulServiceOnShutdown(this IApplicationBuilder app)
+        public static IApplicationBuilder UseConsul(this IApplicationBuilder app)
+        {
+            var options = app.ApplicationServices.GetService<ConsulOptions>();
+
+            if (options.PingEnabled)
+            {
+                app.Map($"/{options.PingEndpoint}", ab => ab.Run(async ctx => ctx.Response.StatusCode = 200));
+            }
+            app.DeregisterConsulServiceOnShutdown();
+            return app;
+        }
+
+        private static void DeregisterConsulServiceOnShutdown(this IApplicationBuilder app)
         {
             var applicationLifetime = app.ApplicationServices.GetService<IApplicationLifetime>();
             var client = app.ApplicationServices.GetService<IConsulClient>(); 
