@@ -4,9 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Polly;
 
-namespace Convey.Discovery.Consul
+namespace Convey.Discovery.Consul.MessageHandlers
 {
-    public class ConsulServiceDiscoveryMessageHandler : DelegatingHandler
+    internal sealed class ConsulServiceDiscoveryMessageHandler : DelegatingHandler
     {
         private readonly IConsulServicesRegistry _servicesRegistry;
         private readonly ConsulOptions _options;

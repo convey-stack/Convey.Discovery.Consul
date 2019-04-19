@@ -2,6 +2,7 @@ using System;
 using Consul;
 using Convey.Discovery.Consul.Builders;
 using Convey.Discovery.Consul.Http;
+using Convey.Discovery.Consul.MessageHandlers;
 using Convey.Discovery.Consul.Registries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -66,6 +67,12 @@ namespace Convey.Discovery.Consul
 
             return builder;
         }
+        
+        public static void AddConsulHttpClient(this IConveyBuilder builder, string clientName, string serviceName)
+            => builder.Services.AddHttpClient(clientName)
+                .AddHttpMessageHandler(c =>
+                    new ConsulServiceDiscoveryMessageHandler(c.GetService<IConsulServicesRegistry>(),
+                        c.GetService<ConsulOptions>(), serviceName, overrideRequestUri: true));
 
         public static IApplicationBuilder UseConsul(this IApplicationBuilder app)
         {
