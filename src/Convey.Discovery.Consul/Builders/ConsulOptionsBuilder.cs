@@ -2,8 +2,8 @@ namespace Convey.Discovery.Consul.Builders
 {
     internal sealed class ConsulOptionsBuilder : IConsulOptionsBuilder
     {
-        private readonly ConsulOptions _options;
-        
+        private readonly ConsulOptions _options = new ConsulOptions();
+
         public IConsulOptionsBuilder Enable(bool enabled)
         {
             _options.Enabled = enabled;
@@ -64,7 +64,6 @@ namespace Convey.Discovery.Consul.Builders
             return this;
         }
 
-        public ConsulOptions Build()
-            => _options;
+        public ConsulOptions Build() => _options;
     }
 }
