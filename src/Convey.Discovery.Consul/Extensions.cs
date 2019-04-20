@@ -2,9 +2,11 @@ using System;
 using Consul;
 using Convey.Discovery.Consul.Builders;
 using Convey.Discovery.Consul.Http;
+using Convey.Discovery.Consul.MessageHandlers;
 using Convey.Discovery.Consul.Registries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Convey.Discovery.Consul
@@ -28,11 +30,12 @@ namespace Convey.Discovery.Consul
 
         public static IConveyBuilder AddConsul(this IConveyBuilder builder, ConsulOptions options)
         {
-            if (!builder.TryRegister(RegistryName))
+            if (!options.Enabled || !builder.TryRegister(RegistryName))
             {
                 return builder;
             }
-            
+
+            builder.Services.AddSingleton(options);
             builder.Services.AddTransient<IConsulServicesRegistry, ConsulServicesRegistry>();
             builder.Services.AddTransient<ConsulServiceDiscoveryMessageHandler>();
             builder.Services.AddHttpClient<IConsulHttpClient, ConsulHttpClient>()
@@ -64,8 +67,26 @@ namespace Convey.Discovery.Consul
 
             return builder;
         }
+        
+        public static void AddConsulHttpClient(this IConveyBuilder builder, string clientName, string serviceName)
+            => builder.Services.AddHttpClient(clientName)
+                .AddHttpMessageHandler(c =>
+                    new ConsulServiceDiscoveryMessageHandler(c.GetService<IConsulServicesRegistry>(),
+                        c.GetService<ConsulOptions>(), serviceName, overrideRequestUri: true));
 
-        public static void DeregisterConsulServiceOnShutdown(this IApplicationBuilder app)
+        public static IApplicationBuilder UseConsul(this IApplicationBuilder app)
+        {
+            var options = app.ApplicationServices.GetService<ConsulOptions>();
+
+            if (options.PingEnabled)
+            {
+                app.Map($"/{options.PingEndpoint}", ab => ab.Run(async ctx => ctx.Response.StatusCode = 200));
+            }
+            app.DeregisterConsulServiceOnShutdown();
+            return app;
+        }
+
+        private static void DeregisterConsulServiceOnShutdown(this IApplicationBuilder app)
         {
             var applicationLifetime = app.ApplicationServices.GetService<IApplicationLifetime>();
             var client = app.ApplicationServices.GetService<IConsulClient>(); 
