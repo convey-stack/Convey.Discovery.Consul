@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Consul;
 using Convey.Discovery.Consul.Builders;
 using Convey.Discovery.Consul.Http;
@@ -6,7 +7,6 @@ using Convey.Discovery.Consul.MessageHandlers;
 using Convey.Discovery.Consul.Registries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Convey.Discovery.Consul
@@ -21,8 +21,9 @@ namespace Convey.Discovery.Consul
             var options = builder.GetOptions<ConsulOptions>(SectionName);
             return builder.AddConsul(options);
         }
-        
-        public static IConveyBuilder AddConsul(this IConveyBuilder builder, Func<IConsulOptionsBuilder, IConsulOptionsBuilder> buildOptions)
+
+        public static IConveyBuilder AddConsul(this IConveyBuilder builder,
+            Func<IConsulOptionsBuilder, IConsulOptionsBuilder> buildOptions)
         {
             var options = buildOptions(new ConsulOptionsBuilder()).Build();
             return builder.AddConsul(options);
@@ -55,7 +56,7 @@ namespace Convey.Discovery.Consul
             {
                 return builder;
             }
-            
+
             builder.Services.AddSingleton(registration);
             builder.AddBuildAction(sp =>
             {
@@ -67,7 +68,7 @@ namespace Convey.Discovery.Consul
 
             return builder;
         }
-        
+
         public static void AddConsulHttpClient(this IConveyBuilder builder, string clientName, string serviceName)
             => builder.Services.AddHttpClient(clientName)
                 .AddHttpMessageHandler(c =>
@@ -80,8 +81,13 @@ namespace Convey.Discovery.Consul
 
             if (options.PingEnabled)
             {
-                app.Map($"/{options.PingEndpoint}", ab => ab.Run(async ctx => ctx.Response.StatusCode = 200));
+                app.Map($"/{options.PingEndpoint}", ab => ab.Run(ctx =>
+                {
+                    ctx.Response.StatusCode = 200;
+                    return Task.CompletedTask;
+                }));
             }
+
             app.DeregisterConsulServiceOnShutdown();
             return app;
         }
@@ -89,59 +95,64 @@ namespace Convey.Discovery.Consul
         private static void DeregisterConsulServiceOnShutdown(this IApplicationBuilder app)
         {
             var applicationLifetime = app.ApplicationServices.GetService<IApplicationLifetime>();
-            var client = app.ApplicationServices.GetService<IConsulClient>(); 
-            var registration = app.ApplicationServices.GetService<AgentServiceRegistration>(); 
-            applicationLifetime.ApplicationStopped.Register(() => 
+            var client = app.ApplicationServices.GetService<IConsulClient>();
+            var registration = app.ApplicationServices.GetService<AgentServiceRegistration>();
+            applicationLifetime.ApplicationStopped.Register(() =>
                 client.Agent.ServiceDeregister(registration.ID));
         }
 
-        private static AgentServiceRegistration CreateConsulAgentRegistration(this IConveyBuilder builder, ConsulOptions options)
+        private static AgentServiceRegistration CreateConsulAgentRegistration(this IConveyBuilder builder,
+            ConsulOptions options)
         {
-                var enabled = options.Enabled;
-                var consulEnabled = Environment.GetEnvironmentVariable("CONSUL_ENABLED")?.ToLowerInvariant();
-                if (!string.IsNullOrWhiteSpace(consulEnabled))
-                {
-                    enabled = consulEnabled == "true" || consulEnabled == "1";
-                }
+            var enabled = options.Enabled;
+            var consulEnabled = Environment.GetEnvironmentVariable("CONSUL_ENABLED")?.ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(consulEnabled))
+            {
+                enabled = consulEnabled == "true" || consulEnabled == "1";
+            }
 
-                if (!enabled)
-                {
-                    return null;
-                }
+            if (!enabled)
+            {
+                return null;
+            }
 
-                if (string.IsNullOrWhiteSpace(options.Address))
-                {
-                    throw new ArgumentException("Consul address can not be empty.",
-                        nameof(options.PingEndpoint));
-                }
+            if (string.IsNullOrWhiteSpace(options.Address))
+            {
+                throw new ArgumentException("Consul address can not be empty.",
+                    nameof(options.PingEndpoint));
+            }
 
-                var uniqueId = $"{Guid.NewGuid():N}";
-                var pingInterval = options.PingInterval <= 0 ? 5 : options.PingInterval;
-                var removeAfterInterval = options.RemoveAfterInterval <= 0 ? 10 : options.RemoveAfterInterval;
-                
-                var registration = new AgentServiceRegistration
-                {
-                    Name = options.Service,
-                    ID = $"{options.Service}:{uniqueId}",
-                    Address = options.Address,
-                    Port = options.Port
-                };
-                
-                if (options.PingEnabled)
-                {
-                    var scheme = options.Address.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)
-                        ? string.Empty
-                        : "http://";
-                    var check = new AgentServiceCheck
-                    {
-                        Interval = TimeSpan.FromSeconds(pingInterval),
-                        DeregisterCriticalServiceAfter = TimeSpan.FromSeconds(removeAfterInterval),
-                        HTTP = $"{scheme}{options.Address}{(options.Port > 0 ? $":{options.Port}" : string.Empty)}/{options.PingEndpoint}"
-                    };
-                    registration.Checks = new[] {check};
-                }
+            var uniqueId = $"{Guid.NewGuid():N}";
+            var pingInterval = options.PingInterval <= 0 ? 5 : options.PingInterval;
+            var removeAfterInterval = options.RemoveAfterInterval <= 0 ? 10 : options.RemoveAfterInterval;
 
+            var registration = new AgentServiceRegistration
+            {
+                Name = options.Service,
+                ID = $"{options.Service}:{uniqueId}",
+                Address = options.Address,
+                Port = options.Port
+            };
+
+            if (!options.PingEnabled)
+            {
                 return registration;
+            }
+
+
+            var scheme = options.Address.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)
+                ? string.Empty
+                : "http://";
+            var check = new AgentServiceCheck
+            {
+                Interval = TimeSpan.FromSeconds(pingInterval),
+                DeregisterCriticalServiceAfter = TimeSpan.FromSeconds(removeAfterInterval),
+                HTTP =
+                    $"{scheme}{options.Address}{(options.Port > 0 ? $":{options.Port}" : string.Empty)}/{options.PingEndpoint}"
+            };
+            registration.Checks = new[] {check};
+
+            return registration;
         }
     }
 }
