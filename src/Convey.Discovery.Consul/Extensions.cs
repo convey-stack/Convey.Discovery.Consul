@@ -5,6 +5,7 @@ using Convey.Discovery.Consul.Builders;
 using Convey.Discovery.Consul.Http;
 using Convey.Discovery.Consul.MessageHandlers;
 using Convey.Discovery.Consul.Registries;
+using Convey.HTTP;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +41,8 @@ namespace Convey.Discovery.Consul
             builder.Services.AddTransient<IConsulServicesRegistry, ConsulServicesRegistry>();
             builder.Services.AddTransient<ConsulServiceDiscoveryMessageHandler>();
             builder.Services.AddHttpClient<IConsulHttpClient, ConsulHttpClient>()
+                .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
+            builder.Services.AddHttpClient<IHttpClient, ConsulHttpClient>()
                 .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
 
             builder.Services.AddSingleton<IConsulClient>(c => new ConsulClient(cfg =>

@@ -1,10 +1,9 @@
-using System.Threading.Tasks;
+using Convey.HTTP;
 
 namespace Convey.Discovery.Consul
 {
-    public interface IConsulHttpClient
+    public interface IConsulHttpClient : IHttpClient
     {
-        Task<T> GetAsync<T>(string requestUri);
     }
 }
 

@@ -2,7 +2,6 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Polly;
 
 namespace Convey.Discovery.Consul.MessageHandlers
 {
@@ -46,14 +45,16 @@ namespace Convey.Discovery.Consul.MessageHandlers
 
         private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             string serviceName, Uri uri, CancellationToken cancellationToken)
-            => await Policy.Handle<Exception>()
-                .WaitAndRetryAsync(RequestRetries, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)))
-                .ExecuteAsync(async () => 
-                {
-                    request.RequestUri = await GetRequestUriAsync(request, serviceName, uri);
+        {
+            if (!_options.Enabled)
+            {
+                return await base.SendAsync(request, cancellationToken);
+            }
 
-                    return await base.SendAsync(request, cancellationToken);
-                });
+            request.RequestUri = await GetRequestUriAsync(request, serviceName, uri);
+
+            return await base.SendAsync(request, cancellationToken);
+        }
 
         private async Task<Uri> GetRequestUriAsync(HttpRequestMessage request,
             string serviceName, Uri uri)

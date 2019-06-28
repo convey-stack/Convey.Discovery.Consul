@@ -15,10 +15,12 @@
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
     <ProjectReference Include="..\..\..\Convey\src\Convey\Convey.csproj" />
+    <ProjectReference Include="..\..\..\Convey.HTTP\src\Convey.HTTP\Convey.HTTP.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
     <PackageReference Include="Convey" Version="0.0.*" />
+    <PackageReference Include="Convey.HTTP" Version="0.0.*" />
   </ItemGroup>
 
   <ItemGroup>

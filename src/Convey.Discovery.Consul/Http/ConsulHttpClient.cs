@@ -1,30 +1,14 @@
 using System.Net.Http;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+using Convey.HTTP;
+using Microsoft.Extensions.Logging;
 
 namespace Convey.Discovery.Consul.Http
 {
-    internal sealed class ConsulHttpClient : IConsulHttpClient
+    internal sealed class ConsulHttpClient : ConveyHttpClient, IConsulHttpClient
     {
-        private readonly HttpClient _client;
-
-        public ConsulHttpClient(HttpClient client)
+        public ConsulHttpClient(HttpClient client, HttpClientOptions options, ILogger<IHttpClient> logger)
+            : base(client, options, logger)
         {
-            _client = client;
-        }
-
-        public async Task<T> GetAsync<T>(string requestUri)
-        {
-            var uri = requestUri.StartsWith("http://") ? requestUri : $"http://{requestUri}";
-            var response = await _client.GetAsync(uri);
-            if (!response.IsSuccessStatusCode)
-            {
-                return default(T);
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            
-            return JsonConvert.DeserializeObject<T>(content);
         }
     }
 }
