@@ -73,10 +73,10 @@ namespace Convey.Discovery.Consul
         }
 
         public static void AddConsulHttpClient(this IConveyBuilder builder, string clientName, string serviceName)
-            => builder.Services.AddHttpClient(clientName)
-                .AddHttpMessageHandler(c =>
-                    new ConsulServiceDiscoveryMessageHandler(c.GetService<IConsulServicesRegistry>(),
-                        c.GetService<ConsulOptions>(), serviceName, overrideRequestUri: true));
+            => builder.Services.AddHttpClient<IHttpClient, ConsulHttpClient>(clientName)
+                .AddHttpMessageHandler(c => new ConsulServiceDiscoveryMessageHandler(
+                    c.GetService<IConsulServicesRegistry>(),
+                    c.GetService<ConsulOptions>(), serviceName, true));
 
         public static IApplicationBuilder UseConsul(this IApplicationBuilder app)
         {
