@@ -84,6 +84,11 @@ namespace Convey.Discovery.Consul
             {
                 var pingEndpoint = string.IsNullOrWhiteSpace(options.PingEndpoint) ? string.Empty :
                     options.PingEndpoint.StartsWith("/") ? options.PingEndpoint : $"/{options.PingEndpoint}";
+                if (pingEndpoint.EndsWith("/"))
+                {
+                    pingEndpoint = pingEndpoint.Substring(0, pingEndpoint.Length - 1);
+                }
+
                 app.Map(pingEndpoint, ab => ab.Run(ctx =>
                 {
                     ctx.Response.StatusCode = 200;
