@@ -44,7 +44,6 @@ namespace Convey.Discovery.Consul
                 .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
             builder.Services.AddHttpClient<IHttpClient, ConsulHttpClient>()
                 .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
-
             builder.Services.AddSingleton<IConsulClient>(c => new ConsulClient(cfg =>
             {
                 if (!string.IsNullOrEmpty(options.Url))
@@ -81,10 +80,9 @@ namespace Convey.Discovery.Consul
         public static IApplicationBuilder UseConsul(this IApplicationBuilder app)
         {
             var options = app.ApplicationServices.GetService<ConsulOptions>();
-
             if (options.PingEnabled)
             {
-                app.Map($"/{options.PingEndpoint}", ab => ab.Run(ctx =>
+                app.Map($"{options.PingEndpoint}", ab => ab.Run(ctx =>
                 {
                     ctx.Response.StatusCode = 200;
                     return Task.CompletedTask;
