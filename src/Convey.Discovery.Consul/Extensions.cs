@@ -17,20 +17,23 @@ namespace Convey.Discovery.Consul
         private const string SectionName = "consul";
         private const string RegistryName = "discovery.consul";
 
-        public static IConveyBuilder AddConsul(this IConveyBuilder builder, string sectionName = SectionName)
+        public static IConveyBuilder AddConsul(this IConveyBuilder builder, string sectionName = SectionName,
+            string httpClientSectionName = "httpClient")
         {
-            var options = builder.GetOptions<ConsulOptions>(SectionName);
-            return builder.AddConsul(options);
+            var consulOptions = builder.GetOptions<ConsulOptions>(sectionName);
+            var httpClientOptions = builder.GetOptions<HttpClientOptions>(httpClientSectionName);
+            return builder.AddConsul(consulOptions, httpClientOptions);
         }
 
         public static IConveyBuilder AddConsul(this IConveyBuilder builder,
-            Func<IConsulOptionsBuilder, IConsulOptionsBuilder> buildOptions)
+            Func<IConsulOptionsBuilder, IConsulOptionsBuilder> buildOptions, HttpClientOptions httpClientOptions)
         {
             var options = buildOptions(new ConsulOptionsBuilder()).Build();
-            return builder.AddConsul(options);
+            return builder.AddConsul(options, httpClientOptions);
         }
 
-        public static IConveyBuilder AddConsul(this IConveyBuilder builder, ConsulOptions options)
+        public static IConveyBuilder AddConsul(this IConveyBuilder builder, ConsulOptions options,
+            HttpClientOptions httpClientOptions)
         {
             builder.Services.AddSingleton(options);
             if (!options.Enabled || !builder.TryRegister(RegistryName))
@@ -38,12 +41,16 @@ namespace Convey.Discovery.Consul
                 return builder;
             }
 
+            if (httpClientOptions.Type?.ToLowerInvariant() == "consul")
+            {
+                builder.Services.AddTransient<ConsulServiceDiscoveryMessageHandler>();
+                builder.Services.AddHttpClient<IConsulHttpClient, ConsulHttpClient>()
+                    .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
+                builder.Services.AddHttpClient<IHttpClient, ConsulHttpClient>()
+                    .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
+            }
+
             builder.Services.AddTransient<IConsulServicesRegistry, ConsulServicesRegistry>();
-            builder.Services.AddTransient<ConsulServiceDiscoveryMessageHandler>();
-            builder.Services.AddHttpClient<IConsulHttpClient, ConsulHttpClient>()
-                .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
-            builder.Services.AddHttpClient<IHttpClient, ConsulHttpClient>()
-                .AddHttpMessageHandler<ConsulServiceDiscoveryMessageHandler>();
             builder.Services.AddSingleton<IConsulClient>(c => new ConsulClient(cfg =>
             {
                 if (!string.IsNullOrEmpty(options.Url))
@@ -53,7 +60,6 @@ namespace Convey.Discovery.Consul
             }));
 
             var registration = builder.CreateConsulAgentRegistration(options);
-
             if (registration is null)
             {
                 return builder;
