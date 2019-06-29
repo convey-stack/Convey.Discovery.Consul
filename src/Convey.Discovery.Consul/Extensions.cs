@@ -82,7 +82,9 @@ namespace Convey.Discovery.Consul
             var options = app.ApplicationServices.GetService<ConsulOptions>();
             if (options.PingEnabled)
             {
-                app.Map($"{options.PingEndpoint}", ab => ab.Run(ctx =>
+                var pingEndpoint = string.IsNullOrWhiteSpace(options.PingEndpoint) ? string.Empty :
+                    options.PingEndpoint.StartsWith("/") ? options.PingEndpoint : $"/{options.PingEndpoint}";
+                app.Map(pingEndpoint, ab => ab.Run(ctx =>
                 {
                     ctx.Response.StatusCode = 200;
                     return Task.CompletedTask;
