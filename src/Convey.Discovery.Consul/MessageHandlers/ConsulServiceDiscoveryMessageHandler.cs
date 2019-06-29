@@ -81,7 +81,5 @@ namespace Convey.Discovery.Consul.MessageHandlers
 
             return uriBuilder.Uri;
         }
-
-        private int RequestRetries => _options.RequestRetries <= 0 ? 3 : _options.RequestRetries;
     }
 }

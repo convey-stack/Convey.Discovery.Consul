@@ -52,12 +52,6 @@ namespace Convey.Discovery.Consul.Builders
             return this;
         }
 
-        public IConsulOptionsBuilder WithRequestRetries(int requestRetries)
-        {
-            _options.RequestRetries = requestRetries;
-            return this;
-        }
-
         public IConsulOptionsBuilder WithSkippingLocalhostDockerDnsReplace(bool skipLocalhostDockerDnsReplace)
         {
             _options.SkipLocalhostDockerDnsReplace = skipLocalhostDockerDnsReplace;

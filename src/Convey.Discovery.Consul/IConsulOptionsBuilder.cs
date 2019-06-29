@@ -10,7 +10,6 @@ namespace Convey.Discovery.Consul
         IConsulOptionsBuilder WithPingEndpoint(string pingEndpoint);
         IConsulOptionsBuilder WithPingInterval(int pingInterval);
         IConsulOptionsBuilder WithRemoteAfterInterval(int remoteAfterInterval);
-        IConsulOptionsBuilder WithRequestRetries(int requestRetries);
         IConsulOptionsBuilder WithSkippingLocalhostDockerDnsReplace(bool skipLocalhostDockerDnsReplace);
         ConsulOptions Build();
     }

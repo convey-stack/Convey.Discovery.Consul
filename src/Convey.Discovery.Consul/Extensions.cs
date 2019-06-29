@@ -32,12 +32,12 @@ namespace Convey.Discovery.Consul
 
         public static IConveyBuilder AddConsul(this IConveyBuilder builder, ConsulOptions options)
         {
+            builder.Services.AddSingleton(options);
             if (!options.Enabled || !builder.TryRegister(RegistryName))
             {
                 return builder;
             }
 
-            builder.Services.AddSingleton(options);
             builder.Services.AddTransient<IConsulServicesRegistry, ConsulServicesRegistry>();
             builder.Services.AddTransient<ConsulServiceDiscoveryMessageHandler>();
             builder.Services.AddHttpClient<IConsulHttpClient, ConsulHttpClient>()
@@ -150,8 +150,8 @@ namespace Convey.Discovery.Consul
             {
                 Interval = TimeSpan.FromSeconds(pingInterval),
                 DeregisterCriticalServiceAfter = TimeSpan.FromSeconds(removeAfterInterval),
-                HTTP =
-                    $"{scheme}{options.Address}{(options.Port > 0 ? $":{options.Port}" : string.Empty)}/{options.PingEndpoint}"
+                HTTP = $"{scheme}{options.Address}{(options.Port > 0 ? $":{options.Port}" : string.Empty)}/" +
+                       $"{options.PingEndpoint}"
             };
             registration.Checks = new[] {check};
 
