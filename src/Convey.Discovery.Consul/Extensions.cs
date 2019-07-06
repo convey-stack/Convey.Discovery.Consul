@@ -109,10 +109,17 @@ namespace Convey.Discovery.Consul
         private static void DeregisterConsulServiceOnShutdown(this IApplicationBuilder app)
         {
             var applicationLifetime = app.ApplicationServices.GetService<IApplicationLifetime>();
-            var client = app.ApplicationServices.GetService<IConsulClient>();
-            var registration = app.ApplicationServices.GetService<AgentServiceRegistration>();
             applicationLifetime.ApplicationStopped.Register(() =>
-                client.Agent.ServiceDeregister(registration.ID));
+            {
+                var registration = app.ApplicationServices.GetService<AgentServiceRegistration>();
+                if (registration is null)
+                {
+                    return;
+                }
+
+                var client = app.ApplicationServices.GetService<IConsulClient>();
+                client.Agent.ServiceDeregister(registration.ID);
+            });
         }
 
         private static AgentServiceRegistration CreateConsulAgentRegistration(this IConveyBuilder builder,
