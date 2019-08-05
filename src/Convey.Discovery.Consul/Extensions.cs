@@ -143,7 +143,12 @@ namespace Convey.Discovery.Consul
                     nameof(options.PingEndpoint));
             }
 
-            var uniqueId = $"{Guid.NewGuid():N}";
+            var uniqueId = string.Empty;
+            using (var serviceProvider = builder.Services.BuildServiceProvider())
+            {
+                uniqueId = serviceProvider.GetRequiredService<IServiceId>().Id;
+            }
+
             var pingInterval = options.PingInterval <= 0 ? 5 : options.PingInterval;
             var removeAfterInterval = options.RemoveAfterInterval <= 0 ? 10 : options.RemoveAfterInterval;
 
